@@ -28,7 +28,38 @@ def parse_questionnaire(file_bytes: bytes, filename: str) -> list[str]:
     )
     return json.loads(response.choices[0].message.content)["questions"]
 
+
 def parse_reference(file_bytes: bytes, filename: str) -> str:
-    # same logic as above but return full text (no question splitting)
-    ...
-    # (I’ll give you the full function when you confirm this works)
+    """
+    Extract clean, readable text from PDF, DOCX, TXT.
+    Returns concatenated text (we chunk later in RAG).
+    """
+    text = ""
+    try:
+        if filename.lower().endswith(".pdf"):
+            with pdfplumber.open(BytesIO(file_bytes)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n\n"
+        elif filename.lower().endswith(".docx"):
+            doc = Document(BytesIO(file_bytes))
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    text += para.text + "\n"
+            # optional: also handle tables if needed later
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        text += cell.text.strip() + " | "
+                    text += "\n"
+        elif filename.lower().endswith(".txt"):
+            text = file_bytes.decode("utf-8", errors="replace")
+        else:
+            raise ValueError("Unsupported file type")
+
+        # Minimal cleanup — remove excessive newlines
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        return "\n".join(lines)
+    except Exception as e:
+        raise RuntimeError(f"Parsing failed: {str(e)}")

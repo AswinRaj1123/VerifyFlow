@@ -24,3 +24,12 @@ class QuestionnaireSessionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ReferenceDocumentOut(BaseModel):
+    id: int
+    session_id: int
+    filename: str
+    # parsed_text: str   ← usually don't return full text in list view
+
+    class Config:
+        from_attributes = True
