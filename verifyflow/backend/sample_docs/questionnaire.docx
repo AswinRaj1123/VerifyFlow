@@ -1,0 +1,10 @@
+1. Does the company have a documented information security policy approved by management?
+2. How does the company manage user access to systems containing sensitive data?
+3. Is multi-factor authentication enforced for administrative accounts?
+4. Describe data encryption practices for data at rest and in transit.
+5. How are security incidents handled?
+6. Are vulnerability assessments conducted regularly?
+7. What cloud vendors are used and how are they assessed?
+8. Is annual security awareness training provided?
+9. How is GDPR compliance ensured?
+10. What is the onboarding and offboarding process?
