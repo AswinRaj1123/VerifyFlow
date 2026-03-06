@@ -33,6 +33,86 @@ def create_session(
     return db_session
 
 
+@router.get("/", response_model=list[schemas.SessionListItem])
+def list_sessions(
+    current_user_email: Annotated[str, Depends(security.get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    List all sessions for the current user.
+    """
+    user = db.query(models.User).filter(models.User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    sessions = db.query(QuestionnaireSession).filter(
+        QuestionnaireSession.user_id == user.id
+    ).order_by(QuestionnaireSession.created_at.desc()).all()
+
+    result = []
+    for session in sessions:
+        question_count = db.query(models.Question).filter(
+            models.Question.session_id == session.id
+        ).count()
+        
+        reference_count = db.query(ReferenceDocument).filter(
+            ReferenceDocument.session_id == session.id
+        ).count()
+        
+        result.append(schemas.SessionListItem(
+            id=session.id,
+            title=session.title,
+            status=session.status,
+            created_at=session.created_at,
+            question_count=question_count,
+            reference_count=reference_count
+        ))
+    
+    return result
+
+
+@router.get("/{session_id}", response_model=schemas.SessionDetailOut)
+def get_session_detail(
+    session_id: int,
+    current_user_email: Annotated[str, Depends(security.get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Get full session details including all questions and references.
+    """
+    user = db.query(models.User).filter(models.User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    session = db.query(QuestionnaireSession).filter(
+        QuestionnaireSession.id == session_id,
+        QuestionnaireSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(404, "Session not found or not owned by you")
+
+    # Fetch questions and references
+    questions = db.query(models.Question).filter(
+        models.Question.session_id == session_id
+    ).order_by(models.Question.id).all()
+
+    references = db.query(ReferenceDocument).filter(
+        ReferenceDocument.session_id == session_id
+    ).all()
+
+    # Build response
+    return schemas.SessionDetailOut(
+        id=session.id,
+        user_id=session.user_id,
+        title=session.title,
+        status=session.status,
+        created_at=session.created_at,
+        questions=[schemas.QuestionOut.from_orm(q) for q in questions],
+        references=[schemas.ReferenceDocumentOut.from_orm(r) for r in references]
+    )
+
+
 @router.post("/{session_id}/references")
 async def upload_references(
     session_id: int,
@@ -427,3 +507,45 @@ def export_session_docx(
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+
+
+@router.patch("/questions/{question_id}", response_model=schemas.QuestionOut)
+def update_question_answer(
+    question_id: int,
+    update: schemas.QuestionUpdateRequest,
+    current_user_email: Annotated[str, Depends(security.get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Update a question's answer (manual edit by user).
+    Sets is_edited flag to true.
+    """
+    user = db.query(models.User).filter(models.User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    # Get question and verify ownership through session
+    question = db.query(models.Question).filter(
+        models.Question.id == question_id
+    ).first()
+
+    if not question:
+        raise HTTPException(404, "Question not found")
+
+    # Verify session ownership
+    session = db.query(QuestionnaireSession).filter(
+        QuestionnaireSession.id == question.session_id,
+        QuestionnaireSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(404, "Not authorized to edit this question")
+
+    # Update question
+    question.answer = update.answer
+    question.is_edited = update.is_edited
+
+    db.commit()
+    db.refresh(question)
+
+    return schemas.QuestionOut.from_orm(question)

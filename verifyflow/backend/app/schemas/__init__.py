@@ -59,3 +59,30 @@ class GenerateAnswersResponse(BaseModel):
 class PartialRegenerateRequest(BaseModel):
     question_ids: list[int]
     force: bool = False
+
+class SessionDetailOut(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    status: str
+    created_at: datetime
+    questions: list[QuestionOut] = []
+    references: list[ReferenceDocumentOut] = []
+
+    class Config:
+        from_attributes = True
+
+class QuestionUpdateRequest(BaseModel):
+    answer: str
+    is_edited: bool = True
+
+class SessionListItem(BaseModel):
+    id: int
+    title: str
+    status: str
+    created_at: datetime
+    question_count: int = 0
+    reference_count: int = 0
+
+    class Config:
+        from_attributes = True

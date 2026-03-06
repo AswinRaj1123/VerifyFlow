@@ -1,0 +1,73 @@
+# Sample Questions for Compliance Assessment
+
+## Data Privacy and Security
+
+1. What is the company's data retention policy for customer information?
+
+2. How long are customer data backups retained?
+
+3. What encryption standards are used for data at rest?
+
+4. What encryption protocols are used for data in transit?
+
+5. How often are security audits conducted?
+
+6. Who is responsible for approving security exceptions?
+
+7. What multi-factor authentication requirements are in place?
+
+8. How frequently are user access rights reviewed?
+
+## Compliance and Regulatory
+
+9. Which regulations does the company comply with?
+
+10. When was the last external audit conducted?
+
+11. What is the timeline for addressing critical audit findings?
+
+12. Is the company ISO 27001 certified?
+
+13. What is the GDPR compliance status?
+
+14. How are data subject rights requests handled?
+
+## Infrastructure and Operations
+
+15. What cloud provider hosts the production environment?
+
+16. What is the Recovery Time Objective (RTO) for critical systems?
+
+17. What is the Recovery Point Objective (RPO)?
+
+18. How often are disaster recovery tests performed?
+
+19. What is the current system uptime percentage?
+
+20. What database technology is used in production?
+
+## Incident Response
+
+21. What is the mean time to detect (MTTD) security incidents?
+
+22. What is the mean time to respond (MTTR) to incidents?
+
+23. How many critical security incidents occurred in the last quarter?
+
+24. What are the steps in the security incident response procedure?
+
+## Network and Access Control
+
+25. How is network segmentation implemented?
+
+26. What firewall rules review frequency is maintained?
+
+27. How many privileged accounts are currently active?
+
+28. What is the completion rate for security awareness training?
+
+## Backup and Recovery
+
+29. What is the frequency of full database backups?
+
+30. Where are backup copies stored for disaster recovery purposes?

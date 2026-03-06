@@ -1,0 +1,156 @@
+# IT Infrastructure Documentation
+
+## System Architecture Overview
+
+### Production Environment
+
+**Cloud Provider**: Amazon Web Services (AWS)
+**Region**: us-east-1 (Primary), us-west-2 (DR)
+**Architecture Type**: Multi-tier, microservices-based
+
+### Core Infrastructure Components
+
+#### 1. Web Application Tier
+- **Technology**: Node.js, React
+- **Hosting**: AWS Elastic Container Service (ECS)
+- **Load Balancer**: Application Load Balancer (ALB)
+- **Scaling**: Auto-scaling enabled (min 2, max 10 instances)
+- **SSL/TLS**: Certificate managed via AWS Certificate Manager
+
+#### 2. Application Tier
+- **API Gateway**: AWS API Gateway
+- **Compute**: AWS Lambda functions + ECS containers
+- **Authentication**: OAuth 2.0 + JWT tokens
+- **Rate Limiting**: 1000 requests per minute per API key
+
+#### 3. Database Tier
+- **Primary Database**: PostgreSQL 15 on AWS RDS
+  - Instance Type: db.r6g.xlarge
+  - Storage: 500 GB SSD, encrypted
+  - Backup: Automated daily backups, 30-day retention
+  - High Availability: Multi-AZ deployment
+
+- **Cache Layer**: Redis on AWS ElastiCache
+  - Node Type: cache.r6g.large
+  - Cluster Mode: Enabled with 3 nodes
+  - Encryption: At rest and in transit
+
+- **Document Store**: MongoDB Atlas M30 cluster
+  - Region: AWS us-east-1
+  - Backup: Continuous cloud backup
+
+#### 4. Storage
+- **Object Storage**: AWS S3
+  - Bucket Encryption: AES-256
+  - Versioning: Enabled
+  - Lifecycle Policies: Archive to Glacier after 90 days
+  - Access Logging: Enabled
+
+- **File Storage**: AWS EFS for shared application files
+  - Performance Mode: General Purpose
+  - Throughput Mode: Elastic
+
+#### 5. Networking
+- **VPC Configuration**: 
+  - CIDR: 10.0.0.0/16
+  - Public Subnets: 3 (across 3 AZs)
+  - Private Subnets: 3 (across 3 AZs)
+  - Database Subnets: 3 (across 3 AZs, isolated)
+
+- **Security Groups**: Configured with least privilege
+- **Network ACLs**: Stateless rules for additional security
+- **VPN**: Site-to-Site VPN for office connectivity
+- **Direct Connect**: 1 Gbps dedicated connection
+
+#### 6. Monitoring and Logging
+- **Monitoring**: AWS CloudWatch
+  - Custom dashboards for key metrics
+  - Alarms configured for critical thresholds
+  
+- **Logging**: 
+  - Application Logs: CloudWatch Logs
+  - Access Logs: S3 bucket
+  - Audit Logs: CloudTrail (all regions)
+  - Log Retention: 365 days
+
+- **APM**: New Relic for application performance monitoring
+  - Transaction tracing enabled
+  - Error rate monitoring
+  - SLA: 99.9% uptime
+
+#### 7. Security Components
+- **Web Application Firewall**: AWS WAF
+  - OWASP Top 10 rule set enabled
+  - Rate-based rules configured
+  - Geographic restrictions applied
+
+- **DDoS Protection**: AWS Shield Standard + Shield Advanced
+- **IDS/IPS**: Third-party solution integrated
+- **Vulnerability Scanning**: Weekly scans via Qualys
+
+### Backup and Disaster Recovery
+
+#### Backup Strategy
+- **Database Backups**: 
+  - Automated daily at 2:00 AM UTC
+  - Manual snapshots before major changes
+  - Cross-region replication to us-west-2
+
+- **Application Backups**:
+  - Container images stored in ECR
+  - Configuration stored in S3 with versioning
+
+#### Disaster Recovery Plan
+- **RTO (Recovery Time Objective)**: 4 hours
+- **RPO (Recovery Point Objective)**: 1 hour
+- **DR Site**: AWS us-west-2 region
+- **Failover**: Automated DNS failover via Route 53
+- **DR Testing**: Quarterly tests documented
+
+### Change Management
+
+#### Change Windows
+- **Standard Changes**: Tuesday/Thursday 10:00 PM - 2:00 AM UTC
+- **Emergency Changes**: As needed with approval
+- **Planned Maintenance**: Monthly, third Sunday 2:00-6:00 AM UTC
+
+#### Deployment Process
+1. Code review and approval
+2. Automated testing in staging environment
+3. Security scan
+4. Deployment to production during change window
+5. Post-deployment validation
+6. Rollback plan ready
+
+### Performance Metrics (Current Month)
+
+- **Average Response Time**: 145ms
+- **Uptime**: 99.97%
+- **Database Query Performance**: Avg 12ms
+- **Peak Concurrent Users**: 3,500
+- **Data Transfer**: 15 TB/month
+- **API Success Rate**: 99.8%
+
+### Capacity Planning
+
+#### Current Utilization
+- **Compute**: 65% average
+- **Database**: 55% storage, 40% CPU
+- **Network**: 30% bandwidth
+- **Storage**: 700 GB of 1 TB provisioned
+
+#### Growth Projections
+- **User Growth**: 20% per quarter
+- **Data Growth**: 10 TB per year
+- **Capacity Review**: Quarterly assessment
+
+### Contact Information
+
+**Infrastructure Team Lead**: infrastructure@company.com
+**24/7 On-Call**: +1-555-0199
+**Escalation**: Level 1 → Level 2 (30 min) → Management (1 hour)
+
+---
+Document Version: 3.2
+Last Updated: January 15, 2026
+Classification: Internal - IT Department
