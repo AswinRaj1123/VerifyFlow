@@ -1,49 +1,20 @@
 from openai import OpenAI
 import chromadb
+from chromadb.utils import embedding_functions  # type: ignore
 import os
 from typing import List, Dict
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
-
-# PostgreSQL (Neon) setup
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Dependency for FastAPI routes
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Lazy Chroma client — only created when first needed
-_chroma_client = None
-
-def get_chroma_client():
-    global _chroma_client
-    if _chroma_client is None:
-        _chroma_client = chromadb.PersistentClient(path="./chroma_data")
-    return _chroma_client
+chroma_client = chromadb.PersistentClient(path="./chroma_data")
 
 
 def get_or_create_collection(session_id: int):
     collection_name = f"session_{session_id}"
-    client_instance = get_chroma_client()
     try:
-        collection = client_instance.get_collection(name=collection_name)
+        collection = chroma_client.get_collection(name=collection_name)
     except:
-        collection = client_instance.create_collection(
+        collection = chroma_client.create_collection(
             name=collection_name,
             embedding_function=None
         )
@@ -51,6 +22,7 @@ def get_or_create_collection(session_id: int):
 
 
 def chunk_text(text: str, chunk_size: int = 900, overlap: int = 100) -> List[str]:
+    """Simple overlapping chunker"""
     chunks = []
     start = 0
     while start < len(text):
@@ -63,6 +35,7 @@ def chunk_text(text: str, chunk_size: int = 900, overlap: int = 100) -> List[str
 
 
 def batch_embeddings(chunks: List[str], batch_size: int = 50) -> List:
+    """Generate embeddings in batches to avoid memory issues"""
     all_embeddings = []
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i:i + batch_size]

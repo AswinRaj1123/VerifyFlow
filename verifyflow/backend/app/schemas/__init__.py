@@ -33,3 +33,29 @@ class ReferenceDocumentOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class QuestionOut(BaseModel):
+    id: int
+    session_id: int
+    original_text: str
+    answer: str | None = None
+    citations: list = []
+    confidence: int = 0
+    is_edited: bool = False
+
+    class Config:
+        from_attributes = True
+
+class QuestionnaireUploadResponse(BaseModel):
+    session_id: int
+    questions_created: int
+    questions: list[QuestionOut]
+
+class GenerateAnswersResponse(BaseModel):
+    session_id: int
+    questions_processed: int
+    results: list[QuestionOut]
+
+class PartialRegenerateRequest(BaseModel):
+    question_ids: list[int]
+    force: bool = False
