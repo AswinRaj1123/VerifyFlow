@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from .. import models, schemas, database
@@ -8,6 +9,7 @@ from ..models import ReferenceDocument, QuestionnaireSession
 from ..services.parser import parse_reference, parse_questionnaire
 from ..services.rag_index import index_references_for_session
 from ..services.rag import generate_answers
+from ..services.export import build_docx
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -365,4 +367,63 @@ def regenerate_selected_questions(
         session_id=session_id,
         questions_processed=len(questions),
         results=[schemas.QuestionOut.from_orm(q) for q in questions]
+    )
+
+
+@router.get("/{session_id}/export")
+def export_session_docx(
+    session_id: int,
+    current_user_email: Annotated[str, Depends(security.get_current_user)],
+    db: Session = Depends(get_db),
+    format: str = "docx"
+):
+    """
+    Export questionnaire session as a downloadable Word document (.docx).
+    Includes questions, answers, confidence scores, citations, and edit flags.
+    """
+    user = db.query(models.User).filter(models.User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    session = db.query(QuestionnaireSession).filter(
+        QuestionnaireSession.id == session_id,
+        QuestionnaireSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(404, "Session not found or not owned by you")
+
+    # Only support docx format for now
+    if format.lower() != "docx":
+        raise HTTPException(400, "Only 'docx' format is supported")
+
+    # Get all questions for this session (ordered by ID)
+    questions = db.query(models.Question).filter(
+        models.Question.session_id == session_id
+    ).order_by(models.Question.id).all()
+
+    if not questions:
+        raise HTTPException(400, "No questions found in session. Upload a questionnaire first.")
+
+    # Build the Word document
+    try:
+        doc_stream = build_docx(
+            session_id=session_id,
+            session_title=session.title,
+            questions=questions,
+            db=db
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Failed to generate document: {str(e)}")
+
+    # Generate filename
+    filename = f"questionnaire-session-{session_id}.docx"
+
+    # Return as streaming response
+    return StreamingResponse(
+        doc_stream,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
     )
